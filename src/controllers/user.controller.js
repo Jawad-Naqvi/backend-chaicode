@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js"
-import {ApiError} from "../utils/apiError.js"
+import {ApiError} from "../utils/ApiError.js"
 import {User} from "../models/user.model.js"
-import {uploadOnClooudinary} from "../utils/cloudnary.js"
+import {uploadOnCloudinary} from "../utils/cloudnary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 
 const registerUser = asyncHandler( async ( req, res) => {
@@ -16,41 +16,53 @@ const registerUser = asyncHandler( async ( req, res) => {
     //return response to frontend
 
 
-   const {fullName, email, username, password} =  req.body
-   console.log("email:", email);
-
-//    if(fullName === "") {
+   const {fullName, email, username, password} =  req.body // yaha per hmme extract kiye sare ka sare data points 
+//    console.log("email:", email);
+ //    if(fullName === "") {
 //     throw  new ApiError(400, "Full name is required")
 //    }
 
+    //per hmmne check kiya ki yaha per kise na empty string to pass to nahi kardi kesi na 
 if (
-    [fullName, email, username, password]. some((field) => field?.trim() === "")
+    [fullName, email, username, password]. some
+    ((field) =>  field?.trim() === "")
+         // => typeof field !== "string" ||
 ) {
     throw new ApiError(400, "All fields are required")
-}
+} 
 
- const existedUser = User.findOne({
+// ya hmmne check kiya ki already user exist to nahi karta email se ya username se 
+ const existedUser = await User.findOne({   
     $or: [{ username }, { email }]
 })
 
+//agar karta hai to error dedo varna agaye chalo 
 if (existedUser) {
     throw new ApiError(409, "Username or email already exists")
 }
+    // console.log(req.files);
+    //phir hmmne local path nikaal liya avatar ka 
+const avatarLocalPath = req.files?.avatar[0]?.path;
+// const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
-const avatarLocalPath = req.files?.avtar[0]?.path;
-const coverImageLocalPath = req.files?.ccoverImage[0]?.path;
-
+let coverImageLocalPath;
+if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+    coverImageLocalPath = req.files.coverImage[0].path
+}
+//agar avatar nahi mila to error throw kar do 
 if(!avatarLocalPath){
     throw new ApiError(400, "Avatar file is required")
 }
-const avatar = await uploadOnClooudinary(avatarLocalPath)
-const coverImage = await uploadOnClooudinary(coverImageLocalPath)
+//milga to cloudinary per upload kar do 
+const avatar = await uploadOnCloudinary(avatarLocalPath)
+const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
+//yah per avatar nahi mila to error throw kar do 
 if(!avatar){
     throw new ApiError(400, "All fields are required")
 }
  
-
+// agar subko hogaya ha to ye user create kar do 
 const user = await User.create({
     fullName,
     avatar: avatar.url,
@@ -61,8 +73,10 @@ const user = await User.create({
 
 })
 
-const createdUser = await user.findById(user._id).select("-password -refredhToken")
+//passwrod aur  refreshtoken hata do jo receive value hai 
+const createdUser = await User.findById(user._id).select("-password -refreshToken");
 
+//agar user recreate hua hai to error dedo 
 if(!createdUser) {
     throw new ApiError(500, "Something went wrong while registering a user")
 }

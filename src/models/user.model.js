@@ -20,7 +20,7 @@
             trim: true,
             
         },
-        fullname: {
+        fullName: {
             type: String,
             required: true,
             trim: true,
@@ -43,7 +43,7 @@
             type: String,
             required : [true, 'password is requuired']
         },
-        refredhToken: {
+        refreshToken: {
             type: String,
         }
     }, {timestamps: true
@@ -68,7 +68,7 @@ userSchema.methods.generateAccessToken = function(){
         _id: this._id,
         email: this.email,
         username: this.username,
-        fullname: this.fullname
+        fullName: this.fullName
     },
 
     process.env.ACCESS_TOKEN_SECRET,{
